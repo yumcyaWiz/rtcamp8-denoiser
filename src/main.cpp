@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
     std::exit(1);
   }
 
+  // parse args
   const std::string beauty_filepath = args.get<std::string>("beauty");
   const std::string albedo_filepath = args.get<std::string>("albedo");
   const std::string normal_filepath = args.get<std::string>("normal");
@@ -63,6 +64,10 @@ int main(int argc, char *argv[])
   const auto beauty_d = std::make_unique<cwl::CUDABuffer<float3>>(beauty);
   const auto albedo_d = std::make_unique<cwl::CUDABuffer<float3>>(albedo);
   const auto normal_d = std::make_unique<cwl::CUDABuffer<float3>>(normal);
+
+  // prepare output image on host
+  const auto denoised_d =
+      std::make_unique<cwl::CUDABuffer<float3>>(width * height);
 
   return 0;
 }
