@@ -9,6 +9,26 @@ static __forceinline__ __device__ int get_image_idx(int i, int j, int width,
   return clamp(i, 0, width - 1) + width * clamp(j, 0, height - 1);
 }
 
+static __forceinline__ __device__ float3 compute_albedo(const float3& albedo,
+                                                        const float3& beauty)
+{
+  float3 ret = albedo;
+  if (ret.x == 0 || ret.y == 0 || ret.z == 0) { ret = beauty; }
+
+  if (ret.x == 0 || ret.y == 0 || ret.z == 0) { return make_float3(1.0f); }
+
+  return ret;
+}
+
+static __forceinline__ __device__ float3 compute_albedo2(const float3& albedo,
+                                                         const float3& beauty)
+{
+  float3 ret = albedo;
+  if (ret.x == 0 || ret.y == 0 || ret.z == 0) { return make_float3(1.0f); }
+
+  return ret;
+}
+
 // http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
 static __forceinline__ __device__ float rgb_to_luminance(const float3& rgb)
 {
@@ -27,13 +47,17 @@ static __forceinline__ __device__ float3 reinhard_inverse(const float3& rgb)
   return rgb * 1.0f / (1.0f - l);
 }
 
-static __forceinline__ __device__ float coordinate_weight(const uint2& c0,
-                                                          const uint2& c1,
-                                                          float sigma)
+static __forceinline__ __device__ float gaussian_kernel(float x, float sigma)
 {
-  const float l2 =
-      (c0.x - c1.x) * (c0.x - c1.x) + (c0.y - c1.y) * (c0.y - c1.y);
-  return expf(-l2 / (2.0f * sigma));
+  return expf(-(x * x) / (2.0f * sigma));
+}
+
+static __forceinline__ __device__ float beauty_weight(const float3& b0,
+                                                      const float3& b1,
+                                                      float sigma)
+{
+  const float l = length(b0 - b1);
+  return expf(-(l * l) / (2.0f * sigma));
 }
 
 // Schied, Christoph, et al. "Spatiotemporal variance-guided filtering:
@@ -42,7 +66,7 @@ static __forceinline__ __device__ float coordinate_weight(const uint2& c0,
 static __forceinline__ __device__ float luminance_weight(float l0, float l1,
                                                          float sigma)
 {
-  return expf(-abs(l0 - l1) / (sigma * 1.0f + EPS));
+  return expf(-((l0 - l1) * (l0 - l1)) / (2.0f * sigma));
 }
 
 static __forceinline__ __device__ float albedo_weight(const float3& a0,
