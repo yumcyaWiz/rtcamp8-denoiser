@@ -41,8 +41,9 @@ target_link_libraries(kernels PUBLIC
 add_executable(main "src/main.cpp")
 target_link_libraries(main PRIVATE
     CUDA::cudart
-    stb_image
     argparse
+    stb_image
+    stb_image_write
     sutil
     cwl
     kernels

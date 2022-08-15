@@ -6,6 +6,7 @@
 #include "bilateral.h"
 #include "cwl/buffer.h"
 #include "stb_image.h"
+#include "stb_image_write.h"
 #include "sutil/vec_math.h"
 
 std::vector<float3> load_hdr_image(const std::string &filepath, int &width,
@@ -28,6 +29,16 @@ std::vector<float3> load_hdr_image(const std::string &filepath, int &width,
   }
 
   return ret;
+}
+
+void save_hdr_image(const std::string &filepath, int width, int height,
+                    const std::vector<float3> &image)
+{
+  if (!stbi_write_hdr(filepath.c_str(), width, height, 3,
+                      reinterpret_cast<const float *>(image.data()))) {
+    std::cerr << "failed to save " + filepath << std::endl;
+    std::exit(1);
+  }
 }
 
 int main(int argc, char *argv[])
@@ -78,6 +89,7 @@ int main(int argc, char *argv[])
   // save denoised image
   std::vector<float3> denoised;
   denoised_d->copy_from_device_to_host(denoised);
+  save_hdr_image(denoised_filepath, width, height, denoised);
 
   return 0;
 }
