@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "argparse/argparse.hpp"
+#include "cwl/buffer.h"
 #include "stb_image.h"
 #include "sutil/vec_math.h"
 

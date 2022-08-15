@@ -19,6 +19,9 @@ endif()
 # CUDA Toolkit
 find_package(CUDAToolkit REQUIRED)
 
+# cwl
+add_subdirectory("cwl/")
+
 # external
 add_subdirectory("externals/")
 
@@ -29,4 +32,5 @@ target_link_libraries(main PRIVATE
     stb_image
     argparse
     sutil
+    cwl
 )
