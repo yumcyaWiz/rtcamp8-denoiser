@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "a-trous.h"
 #include "argparse/argparse.hpp"
 #include "bilateral.h"
 #include "cwl/buffer.h"
@@ -82,9 +83,13 @@ int main(int argc, char *argv[])
       std::make_unique<cwl::CUDABuffer<float3>>(width * height);
 
   // launch denoiser
-  bilateral_kernel_launch(
-      beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
-      normal_d->get_device_ptr(), width, height, denoised_d->get_device_ptr());
+  //   bilateral_kernel_launch(
+  //       beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+  //       normal_d->get_device_ptr(), width, height,
+  //       denoised_d->get_device_ptr());
+  a_trous_kernel_launch(beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+                        normal_d->get_device_ptr(), width, height,
+                        denoised_d->get_device_ptr());
 
   // save denoised image
   std::vector<float3> denoised;

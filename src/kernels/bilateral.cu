@@ -13,7 +13,7 @@ void __global__ bilateral_kernel(const float3* beauty, const float3* albedo,
   if (i >= width || j >= height) return;
 
   const int K = 8;
-  const float sigma_c = 128.0f;
+  const float sigma_h = 16.0f;
   const float sigma_n = 128.0f;
   const float sigma_a = 0.01f;
 
@@ -32,10 +32,10 @@ void __global__ bilateral_kernel(const float3* beauty, const float3* albedo,
       const float3 n1 = 2.0f * normal[idx] - 1.0f;
 
       const float dist = sqrtf(u * u + v * v);
-      const float wc = gaussian_kernel(dist, sigma_c);
+      const float h = gaussian_kernel(dist, sigma_h);
       const float wa = albedo_weight(a0, a1, sigma_a);
       const float wn = normal_weight(n0, n1, sigma_n);
-      const float w = wc * wa * wn + EPS;
+      const float w = h * wa * wn + EPS;
 
       b_sum += w * reinhard(b1);
       w_sum += w;

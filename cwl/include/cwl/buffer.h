@@ -60,6 +60,12 @@ class CUDABuffer
                           cudaMemcpyDeviceToHost));
   }
 
+  void copy_from_device_to_device(const float3* value)
+  {
+    CUDA_CHECK(cudaMemcpy(m_d_ptr, value, m_buffer_size * sizeof(T),
+                          cudaMemcpyDeviceToDevice));
+  }
+
   T* get_device_ptr() const { return m_d_ptr; }
 
   uint32_t get_size() const { return m_buffer_size; }

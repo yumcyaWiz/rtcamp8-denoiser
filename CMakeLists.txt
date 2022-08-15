@@ -34,6 +34,7 @@ target_include_directories(kernels PUBLIC
     "src/kernels"
 )
 target_link_libraries(kernels PUBLIC
+    cwl
     sutil
 )
 
