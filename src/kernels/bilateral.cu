@@ -1,3 +1,4 @@
+#include "bilateral.h"
 #include "shared.cu"
 #include "sutil/vec_math.h"
 
@@ -40,9 +41,10 @@ void __global__ bilateral_kernel(const float3* beauty, const float3* albedo,
   denoised[image_idx] = b_sum / w_sum;
 }
 
-void __host__ bilateral_launch(const float3* beauty, const float3* albedo,
-                               const float3* normal, int width, int height,
-                               float3* denoised)
+void __host__ bilateral_kernel_launch(const float3* beauty,
+                                      const float3* albedo,
+                                      const float3* normal, int width,
+                                      int height, float3* denoised)
 {
   const dim3 threads_per_block(16, 16);
   const dim3 blocks(max(width / threads_per_block.x, 1),
