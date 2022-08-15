@@ -1,3 +1,6 @@
 [submodule "externals/stb"]
 	path = externals/stb
 	url = git@github.com:nothings/stb.git
+[submodule "externals/argparse"]
+	path = externals/argparse
+	url = git@github.com:p-ranav/argparse.git
