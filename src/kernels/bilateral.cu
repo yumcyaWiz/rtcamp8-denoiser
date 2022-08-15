@@ -1,12 +1,6 @@
 #include "shared.cu"
 #include "sutil/vec_math.h"
 
-static __forceinline__ __device__ int get_image_idx(int i, int j, int width,
-                                                    int height)
-{
-  return clamp(i, 0, width - 1) + width * clamp(j, 0, height - 1);
-}
-
 void __global__ bilateral_kernel(const float3* beauty, const float3* albedo,
                                  const float3* normal, int width, int height,
                                  float3* denoised)

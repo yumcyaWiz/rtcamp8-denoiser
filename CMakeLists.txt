@@ -25,6 +25,18 @@ add_subdirectory("cwl/")
 # external
 add_subdirectory("externals/")
 
+# kernels
+add_library(kernels
+    "src/kernels/bilateral.cu"
+    "src/kernels/a-trous.cu"
+)
+target_include_directories(kernels PUBLIC
+    "src/kernels"
+)
+target_link_libraries(kernels PUBLIC
+    sutil
+)
+
 # main
 add_executable(main "src/main.cpp")
 target_link_libraries(main PRIVATE
@@ -33,4 +45,5 @@ target_link_libraries(main PRIVATE
     argparse
     sutil
     cwl
+    kernels
 )
