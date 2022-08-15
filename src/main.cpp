@@ -1,3 +1,4 @@
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -57,6 +58,11 @@ int main(int argc, char *argv[])
       load_hdr_image(albedo_filepath, width, height);
   const std::vector<float3> normal =
       load_hdr_image(normal_filepath, width, height);
+
+  // load input images on host
+  const auto beauty_d = std::make_unique<cwl::CUDABuffer<float3>>(beauty);
+  const auto albedo_d = std::make_unique<cwl::CUDABuffer<float3>>(albedo);
+  const auto normal_d = std::make_unique<cwl::CUDABuffer<float3>>(normal);
 
   return 0;
 }
