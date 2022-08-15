@@ -11,3 +11,9 @@ add_library(argparse INTERFACE)
 target_include_directories(argparse INTERFACE
     "argparse/include"
 )
+
+# sutil
+add_library(sutil INTERFACE)
+target_include_directories(sutil INTERFACE
+    "sutil/"
+)

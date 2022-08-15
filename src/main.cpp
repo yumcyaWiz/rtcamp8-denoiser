@@ -1,8 +1,34 @@
-#include "argparse/argparse.hpp"
-#include <cstdio>
 #include <stdexcept>
+#include <vector>
 
-int main(int argc, char *argv[]) {
+#include "argparse/argparse.hpp"
+#include "stb_image.h"
+#include "sutil/vec_math.h"
+
+std::vector<float3> load_hdr_image(const std::string &filepath, int &width,
+                                   int &height)
+{
+  int c;
+  const float *image = stbi_loadf(filepath.c_str(), &width, &height, &c, 3);
+  if (!image) {
+    std::cerr << "failed to load " + filepath << std::endl;
+    std::exit(1);
+  }
+
+  std::vector<float3> ret(width * height);
+  for (int j = 0; j < height; ++j) {
+    for (int i = 0; i < width; ++i) {
+      const int idx = 3 * i + 3 * width * j;
+      ret[i + width * j] =
+          make_float3(image[idx + 0], image[idx + 1], image[idx + 2]);
+    }
+  }
+
+  return ret;
+}
+
+int main(int argc, char *argv[])
+{
   argparse::ArgumentParser args("main");
   args.add_argument("beauty").help("beauty image input filepath");
   args.add_argument("albedo").help("albedo image input filepath");
@@ -17,10 +43,19 @@ int main(int argc, char *argv[]) {
     std::exit(1);
   }
 
-  const std::string beauty = args.get<std::string>("beauty");
-  const std::string albedo = args.get<std::string>("albedo");
-  const std::string normal = args.get<std::string>("normal");
-  const std::string denoised = args.get<std::string>("denoised");
+  const std::string beauty_filepath = args.get<std::string>("beauty");
+  const std::string albedo_filepath = args.get<std::string>("albedo");
+  const std::string normal_filepath = args.get<std::string>("normal");
+  const std::string denoised_filepath = args.get<std::string>("denoised");
+
+  // load input images on host
+  int width, height;
+  const std::vector<float3> beauty =
+      load_hdr_image(beauty_filepath, width, height);
+  const std::vector<float3> albedo =
+      load_hdr_image(albedo_filepath, width, height);
+  const std::vector<float3> normal =
+      load_hdr_image(normal_filepath, width, height);
 
   return 0;
 }

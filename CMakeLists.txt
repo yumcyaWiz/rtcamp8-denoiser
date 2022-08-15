@@ -25,6 +25,8 @@ add_subdirectory("externals/")
 # main
 add_executable(main "src/main.cpp")
 target_link_libraries(main PRIVATE
+    CUDA::cudart
     stb_image
     argparse
+    sutil
 )
