@@ -34,7 +34,7 @@ void __global__ a_trous_kernel(const float3* beauty, const float3* albedo,
       const float3 a1 = albedo[idx];
       const float3 n1 = 2.0f * normal[idx] - 1.0f;
 
-      const float h = filter[u + 2] * filter[v + 2];
+      const float h = filter[max(u + 2, v + 2)];
       const float wa = albedo_weight(a0, a1, sigma_a);
       const float wn = normal_weight(n0, n1, sigma_n);
       const float w = h * wa * wn + EPS;
