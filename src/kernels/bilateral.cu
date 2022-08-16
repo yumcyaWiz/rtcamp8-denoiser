@@ -35,12 +35,13 @@ void __global__ bilateral_kernel(const float3* beauty, const float3* albedo,
       const float h = gaussian_kernel(dist, sigma_h);
       const float wa = albedo_weight(a0, a1, sigma_a);
       const float wn = normal_weight(n0, n1, sigma_n);
-      const float w = h * wa * wn + EPS;
+      const float w = h * wa * wn;
 
       b_sum += w * reinhard(b1);
       w_sum += w;
     }
   }
+  w_sum += EPS;
 
   denoised[image_idx] = reinhard_inverse(b_sum / w_sum);
 }
