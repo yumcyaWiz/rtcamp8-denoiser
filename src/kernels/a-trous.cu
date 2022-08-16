@@ -12,6 +12,7 @@ void __global__ a_trous_kernel(const float3* beauty, const float3* albedo,
   const int j = blockIdx.y * blockDim.y + threadIdx.y;
   if (i >= width || j >= height) return;
 
+  const float sigma_rt = 16.0f * powf(2, -level);
   const float sigma_n = 128.0f;
   const float sigma_a = 0.01f;
 
@@ -35,9 +36,10 @@ void __global__ a_trous_kernel(const float3* beauty, const float3* albedo,
       const float3 n1 = 2.0f * normal[idx] - 1.0f;
 
       const float h = filter[max(u + 2, v + 2)];
-      const float wa = albedo_weight(a0, a1, sigma_a);
+      const float w_rt = gaussian_kernel(length(b0 - b1), sigma_rt);
       const float wn = normal_weight(n0, n1, sigma_n);
-      const float w = h * wa * wn;
+      const float wa = albedo_weight(a0, a1, sigma_a);
+      const float w = h * wn * wa;
 
       b_sum += w * reinhard(b1);
       w_sum += w;
@@ -52,7 +54,8 @@ void __host__ a_trous_kernel_launch(const float3* beauty, const float3* albedo,
                                     const float3* normal, int width, int height,
                                     float3* denoised)
 {
-  const int N_iter = 3;
+  const int N_iter = 1;
+  const int N_level = 3;
 
   cwl::CUDABuffer<float3> temp0(width * height);
   temp0.copy_from_device_to_device(beauty);
@@ -61,18 +64,20 @@ void __host__ a_trous_kernel_launch(const float3* beauty, const float3* albedo,
   const dim3 threads_per_block(16, 16);
   const dim3 blocks(width / threads_per_block.x + 1,
                     height / threads_per_block.y + 1);
-  for (int i = 0; i < N_iter; ++i) {
-    const float3* in =
-        (i % 2 == 0) ? temp0.get_device_ptr() : temp1.get_device_ptr();
-    float3* out =
-        (i % 2 == 0) ? temp1.get_device_ptr() : temp0.get_device_ptr();
-    a_trous_kernel<<<blocks, threads_per_block>>>(in, albedo, normal, width,
-                                                  height, i, out);
-    CUDA_SYNC_CHECK();
+  for (int k = 0; k < N_iter; ++k) {
+    for (int i = 0; i < N_level; ++i) {
+      const float3* in =
+          ((i + k) % 2 == 0) ? temp0.get_device_ptr() : temp1.get_device_ptr();
+      float3* out =
+          ((i + k) % 2 == 0) ? temp1.get_device_ptr() : temp0.get_device_ptr();
+      a_trous_kernel<<<blocks, threads_per_block>>>(in, albedo, normal, width,
+                                                    height, i, out);
+      CUDA_SYNC_CHECK();
+    }
   }
 
-  const float3* out =
-      (N_iter % 2 == 0) ? temp1.get_device_ptr() : temp0.get_device_ptr();
+  const float3* out = ((N_iter + N_level) % 2 == 0) ? temp1.get_device_ptr()
+                                                    : temp0.get_device_ptr();
   cudaMemcpy(denoised, out, width * height * sizeof(float3),
              cudaMemcpyDeviceToDevice);
   CUDA_SYNC_CHECK();
