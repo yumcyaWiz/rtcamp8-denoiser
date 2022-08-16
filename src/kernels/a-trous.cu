@@ -58,8 +58,8 @@ void __host__ a_trous_kernel_launch(const float3* beauty, const float3* albedo,
   cwl::CUDABuffer<float3> temp1(width * height);
 
   const dim3 threads_per_block(16, 16);
-  const dim3 blocks(max(width / threads_per_block.x, 1),
-                    max(height / threads_per_block.y, 1));
+  const dim3 blocks(width / threads_per_block.x + 1,
+                    height / threads_per_block.y + 1);
   for (int i = 0; i < N_iter; ++i) {
     const float3* in =
         (i % 2 == 0) ? temp0.get_device_ptr() : temp1.get_device_ptr();

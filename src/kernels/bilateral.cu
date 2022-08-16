@@ -51,8 +51,8 @@ void __host__ bilateral_kernel_launch(const float3* beauty,
                                       int height, float3* denoised)
 {
   const dim3 threads_per_block(16, 16);
-  const dim3 blocks(max(width / threads_per_block.x, 1),
-                    max(height / threads_per_block.y, 1));
+  const dim3 blocks(width / threads_per_block.x + 1,
+                    height / threads_per_block.y + 1);
   bilateral_kernel<<<blocks, threads_per_block>>>(beauty, albedo, normal, width,
                                                   height, denoised);
 }
