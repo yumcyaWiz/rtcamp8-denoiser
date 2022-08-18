@@ -38,10 +38,10 @@ void __global__ bilateral_kernel(const float3* beauty, int width, int height,
   denoised[image_idx] = reinhard_inverse(b_sum / w_sum);
 }
 
-void __global__ guided_bilateral_kernel(const float3* beauty,
-                                        const float3* albedo,
-                                        const float3* normal, int width,
-                                        int height, float3* denoised)
+void __global__ joint_bilateral_kernel(const float3* beauty,
+                                       const float3* albedo,
+                                       const float3* normal, int width,
+                                       int height, float3* denoised)
 {
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
   const int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -95,14 +95,14 @@ void __host__ bilateral_kernel_launch(const float3* beauty,
                                                   denoised);
 }
 
-void __host__ guided_bilateral_kernel_launch(const float3* beauty,
-                                             const float3* albedo,
-                                             const float3* normal, int width,
-                                             int height, float3* denoised)
+void __host__ joint_bilateral_kernel_launch(const float3* beauty,
+                                            const float3* albedo,
+                                            const float3* normal, int width,
+                                            int height, float3* denoised)
 {
   const dim3 threads_per_block(16, 16);
   const dim3 blocks(width / threads_per_block.x + 1,
                     height / threads_per_block.y + 1);
-  guided_bilateral_kernel<<<blocks, threads_per_block>>>(
+  joint_bilateral_kernel<<<blocks, threads_per_block>>>(
       beauty, albedo, normal, width, height, denoised);
 }
