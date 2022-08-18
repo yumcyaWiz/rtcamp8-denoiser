@@ -28,6 +28,7 @@ add_subdirectory("externals/")
 # kernels
 add_library(kernels
     "src/kernels/bilateral.cu"
+    "src/kernels/nl-means.cu"
     "src/kernels/a-trous.cu"
 )
 target_include_directories(kernels PUBLIC

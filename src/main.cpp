@@ -6,6 +6,7 @@
 #include "argparse/argparse.hpp"
 #include "bilateral.h"
 #include "cwl/buffer.h"
+#include "nl-means.h"
 #include "stb_image.h"
 #include "stb_image_write.h"
 #include "sutil/vec_math.h"
@@ -87,9 +88,13 @@ int main(int argc, char *argv[])
   //     beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
   //     normal_d->get_device_ptr(), width, height,
   //     denoised_d->get_device_ptr());
-  joint_bilateral_kernel_launch(
-      beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
-      normal_d->get_device_ptr(), width, height, denoised_d->get_device_ptr());
+  // joint_bilateral_kernel_launch(
+  //     beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+  //     normal_d->get_device_ptr(), width, height,
+  //     denoised_d->get_device_ptr());
+  nlmeans_kernel_launch(beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+                        normal_d->get_device_ptr(), width, height,
+                        denoised_d->get_device_ptr());
   // a_trous_kernel_launch(beauty_d->get_device_ptr(),
   // albedo_d->get_device_ptr(),
   //                       normal_d->get_device_ptr(), width, height,
