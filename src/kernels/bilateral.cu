@@ -49,6 +49,7 @@ void __global__ guided_bilateral_kernel(const float3* beauty,
 
   const int K = 8;
   const float sigma_h = 16.0f;
+  const float sigma_b = 128.0f;
   const float sigma_n = 128.0f;
   const float sigma_a = 0.01f;
 
@@ -68,9 +69,10 @@ void __global__ guided_bilateral_kernel(const float3* beauty,
 
       const float dist = sqrtf(u * u + v * v);
       const float h = gaussian_kernel(dist, sigma_h);
-      const float wa = albedo_weight(a0, a1, sigma_a);
-      const float wn = normal_weight(n0, n1, sigma_n);
-      const float w = h * wa * wn;
+      const float wb = min(gaussian_kernel(length(b0 - b1), sigma_b), 1.0f);
+      const float wa = min(albedo_weight(a0, a1, sigma_a), 1.0f);
+      const float wn = min(normal_weight(n0, n1, sigma_n) + EPS, 1.0f);
+      const float w = h * wb * wa * wn;
 
       b_sum += w * reinhard(b1);
       w_sum += w;
