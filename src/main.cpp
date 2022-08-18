@@ -6,6 +6,7 @@
 #include "argparse/argparse.hpp"
 #include "bilateral.h"
 #include "cwl/buffer.h"
+#include "cwl/util.h"
 #include "nl-means.h"
 #include "stb_image.h"
 #include "stb_image_write.h"
@@ -83,27 +84,53 @@ int main(int argc, char *argv[])
   const auto denoised_d =
       std::make_unique<cwl::CUDABuffer<float3>>(width * height);
 
-  // launch denoiser
-  // bilateral_kernel_launch(
-  //     beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
-  //     normal_d->get_device_ptr(), width, height,
-  //     denoised_d->get_device_ptr());
-  // joint_bilateral_kernel_launch(
-  //     beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
-  //     normal_d->get_device_ptr(), width, height,
-  //     denoised_d->get_device_ptr());
+  // bilateral
+  bilateral_kernel_launch(
+      beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+      normal_d->get_device_ptr(), width, height, denoised_d->get_device_ptr());
+  CUDA_SYNC_CHECK();
+
+  std::vector<float3> denoised;
+  denoised_d->copy_from_device_to_host(denoised);
+  save_hdr_image(denoised_filepath + "_bilateral.hdr", width, height, denoised);
+
+  // joint bilateral
+  joint_bilateral_kernel_launch(
+      beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+      normal_d->get_device_ptr(), width, height, denoised_d->get_device_ptr());
+  CUDA_SYNC_CHECK();
+
+  denoised_d->copy_from_device_to_host(denoised);
+  save_hdr_image(denoised_filepath + "_joint_bilateral.hdr", width, height,
+                 denoised);
+
+  // nl-means
   nlmeans_kernel_launch(beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
                         normal_d->get_device_ptr(), width, height,
                         denoised_d->get_device_ptr());
-  // a_trous_kernel_launch(beauty_d->get_device_ptr(),
-  // albedo_d->get_device_ptr(),
-  //                       normal_d->get_device_ptr(), width, height,
-  //                       denoised_d->get_device_ptr());
+  CUDA_SYNC_CHECK();
 
-  // save denoised image
-  std::vector<float3> denoised;
   denoised_d->copy_from_device_to_host(denoised);
-  save_hdr_image(denoised_filepath, width, height, denoised);
+  save_hdr_image(denoised_filepath + "_nlmeans.hdr", width, height, denoised);
+
+  // joint nl-means
+  joint_nlmeans_kernel_launch(
+      beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+      normal_d->get_device_ptr(), width, height, denoised_d->get_device_ptr());
+  CUDA_SYNC_CHECK();
+
+  denoised_d->copy_from_device_to_host(denoised);
+  save_hdr_image(denoised_filepath + "_joint_nlmeans.hdr", width, height,
+                 denoised);
+
+  // a-trous
+  a_trous_kernel_launch(beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+                        normal_d->get_device_ptr(), width, height,
+                        denoised_d->get_device_ptr());
+  CUDA_SYNC_CHECK();
+
+  denoised_d->copy_from_device_to_host(denoised);
+  save_hdr_image(denoised_filepath + "_atrous.hdr", width, height, denoised);
 
   return 0;
 }
