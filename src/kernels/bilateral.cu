@@ -4,9 +4,44 @@
 #include "shared.cu"
 #include "sutil/vec_math.h"
 
-void __global__ bilateral_kernel(const float3* beauty, const float3* albedo,
-                                 const float3* normal, int width, int height,
+void __global__ bilateral_kernel(const float3* beauty, int width, int height,
                                  float3* denoised)
+{
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int j = blockIdx.y * blockDim.y + threadIdx.y;
+  if (i >= width || j >= height) return;
+
+  const int K = 8;
+  const float sigma_b = 128.0f;
+  const float sigma_p = 16.0f;
+
+  const int image_idx = i + width * j;
+  const float3 b0 = beauty[image_idx];
+
+  float3 b_sum = make_float3(0.0f);
+  float w_sum = 0.0f;
+  for (int v = -K; v <= K; ++v) {
+    for (int u = -K; u <= K; ++u) {
+      const int idx = get_image_idx(i + u, j + v, width, height);
+      const float3 b1 = beauty[idx];
+
+      const float w_b = gaussian_kernel(length(b0 - b1), sigma_b);
+      const float w_p = gaussian_kernel(sqrtf(u * u + v * v), sigma_p);
+      const float w = w_b * w_p;
+
+      b_sum += w * reinhard(b1);
+      w_sum += w;
+    }
+  }
+  w_sum += EPS;
+
+  denoised[image_idx] = reinhard_inverse(b_sum / w_sum);
+}
+
+void __global__ guided_bilateral_kernel(const float3* beauty,
+                                        const float3* albedo,
+                                        const float3* normal, int width,
+                                        int height, float3* denoised)
 {
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
   const int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -54,6 +89,18 @@ void __host__ bilateral_kernel_launch(const float3* beauty,
   const dim3 threads_per_block(16, 16);
   const dim3 blocks(width / threads_per_block.x + 1,
                     height / threads_per_block.y + 1);
-  bilateral_kernel<<<blocks, threads_per_block>>>(beauty, albedo, normal, width,
-                                                  height, denoised);
+  bilateral_kernel<<<blocks, threads_per_block>>>(beauty, width, height,
+                                                  denoised);
+}
+
+void __host__ guided_bilateral_kernel_launch(const float3* beauty,
+                                             const float3* albedo,
+                                             const float3* normal, int width,
+                                             int height, float3* denoised)
+{
+  const dim3 threads_per_block(16, 16);
+  const dim3 blocks(width / threads_per_block.x + 1,
+                    height / threads_per_block.y + 1);
+  guided_bilateral_kernel<<<blocks, threads_per_block>>>(
+      beauty, albedo, normal, width, height, denoised);
 }
