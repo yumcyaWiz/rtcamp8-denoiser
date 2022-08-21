@@ -39,9 +39,9 @@ target_link_libraries(kernels PUBLIC
     sutil
 )
 
-# main
-add_executable(main "src/main.cpp")
-target_link_libraries(main PRIVATE
+# test
+add_executable(test "src/test.cpp")
+target_link_libraries(test PRIVATE
     CUDA::cudart
     argparse
     stb_image
