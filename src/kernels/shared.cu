@@ -47,7 +47,7 @@ static __forceinline__ __device__ bool is_ok_to_demodulate_albedo(
 
   const float3 m = reinhard(beauty) / albedo;
   const float m_avg = (m.x + m.y + m.z) / 3.0f;
-  const float threshold = 0.1f;
+  const float threshold = 0.2f;
   return abs(m.x - m_avg) < threshold && abs(m.y - m_avg) < threshold &&
          abs(m.y - m_avg) < threshold;
 }
