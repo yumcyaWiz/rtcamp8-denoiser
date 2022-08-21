@@ -4,7 +4,9 @@
 
 ## Requirements
 
+* C++17
 * CUDA
+* CMake 3.20
 
 ## Build
 
