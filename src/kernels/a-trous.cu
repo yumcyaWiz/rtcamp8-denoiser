@@ -20,11 +20,13 @@ void __global__ a_trous_kernel(const float3* beauty, const float3* albedo,
   const float3 b0 = beauty[image_idx];
   const float3 a0 = albedo[image_idx];
   const float3 n0 = 2.0f * normal[image_idx] - 1.0f;
+  const float3 m0 = compute_albedo(a0);
 
   const float filter[] = {1.0f / 16.0f, 1.0f / 4.0f, 3.0f / 8.0f, 1.0f / 4.0f,
                           1.0f / 16.0f};
 
-  float3 b_sum = make_float3(0.0f);
+  float3 sum = make_float3(0.0f);
+  float3 sum_demodulated = make_float3(0.0f);
   float w_sum = 0.0f;
   const int step_width = pow(2, level);
   for (int v = -2; v <= 2; ++v) {
@@ -37,17 +39,23 @@ void __global__ a_trous_kernel(const float3* beauty, const float3* albedo,
 
       const float h = filter[max(u + 2, v + 2)];
       const float w_rt = gaussian_kernel(length(b0 - b1), sigma_rt);
-      const float wn = normal_weight(n0, n1, sigma_n);
+      const float wn = max(normal_weight(n0, n1, sigma_n), 0.01f);
       const float wa = albedo_weight(a0, a1, sigma_a);
-      const float w = h * wn * wa;
+      const float w = h * w_rt * wn * wa;
 
-      b_sum += w * reinhard(b1);
+      if (is_ok_to_demodulate_albedo(b1, a1)) {
+        sum_demodulated += w * reinhard(b1) / a1;
+      } else {
+        sum += w * reinhard(b1);
+      }
+
       w_sum += w;
     }
   }
   w_sum += EPS;
 
-  denoised[image_idx] = reinhard_inverse(b_sum / w_sum);
+  denoised[image_idx] = reinhard_inverse(sum / w_sum) +
+                        reinhard_inverse(m0 * sum_demodulated / w_sum);
 }
 
 void __host__ a_trous_kernel_launch(const float3* beauty, const float3* albedo,
