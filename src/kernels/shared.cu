@@ -20,8 +20,7 @@ static __forceinline__ __device__ float3 compute_albedo(const float3& albedo,
   return ret;
 }
 
-static __forceinline__ __device__ float3 compute_albedo2(const float3& albedo,
-                                                         const float3& beauty)
+static __forceinline__ __device__ float3 compute_albedo2(const float3& albedo)
 {
   float3 ret = albedo;
   if (ret.x == 0 || ret.y == 0 || ret.z == 0) { return make_float3(1.0f); }
@@ -43,8 +42,25 @@ static __forceinline__ __device__ float3 reinhard(const float3& rgb)
 
 static __forceinline__ __device__ float3 reinhard_inverse(const float3& rgb)
 {
-  const float l = rgb_to_luminance(rgb);
+  const float l = min(max(rgb_to_luminance(rgb), 0.01f), 0.99f);
   return rgb * 1.0f / (1.0f - l);
+}
+
+static __forceinline__ __device__ bool is_ok_to_demodulate_albedo(
+    const float3& beauty, const float3& albedo)
+{
+  // NOTE: 0.0f gives some black dots at the edges
+  if (max(max(albedo.x, albedo.y), albedo.z) < 0.1f) { return false; }
+
+  if (albedo.x <= 0.0f || albedo.y <= 0.0f || albedo.z <= 0.0f) {
+    return false;
+  }
+
+  const float3 m = reinhard(beauty) / albedo;
+  const float m_avg = (m.x + m.y + m.z) / 3.0f;
+  const float threshold = 0.1f;
+  return abs(m.x - m_avg) < threshold && abs(m.y - m_avg) < threshold &&
+         abs(m.y - m_avg) < threshold;
 }
 
 static __forceinline__ __device__ float gaussian_kernel(float x, float sigma)
