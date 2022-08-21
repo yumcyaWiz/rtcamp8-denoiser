@@ -9,18 +9,7 @@ static __forceinline__ __device__ int get_image_idx(int i, int j, int width,
   return clamp(i, 0, width - 1) + width * clamp(j, 0, height - 1);
 }
 
-static __forceinline__ __device__ float3 compute_albedo(const float3& albedo,
-                                                        const float3& beauty)
-{
-  float3 ret = albedo;
-  if (ret.x == 0 || ret.y == 0 || ret.z == 0) { ret = beauty; }
-
-  if (ret.x == 0 || ret.y == 0 || ret.z == 0) { return make_float3(1.0f); }
-
-  return ret;
-}
-
-static __forceinline__ __device__ float3 compute_albedo2(const float3& albedo)
+static __forceinline__ __device__ float3 compute_albedo(const float3& albedo)
 {
   float3 ret = albedo;
   if (ret.x == 0 || ret.y == 0 || ret.z == 0) { return make_float3(1.0f); }

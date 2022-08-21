@@ -65,8 +65,10 @@ void __global__ joint_nlmeans_kernel(const float3* beauty, const float3* albedo,
   const float3 b0 = beauty[image_idx];
   const float3 a0 = albedo[image_idx];
   const float3 n0 = 2.0f * normal[image_idx] - 1.0f;
+  const float3 m0 = compute_albedo(a0);
 
-  float3 b_sum = make_float3(0.0f);
+  float3 sum = make_float3(0.0f);
+  float3 sum_demodulated = make_float3(0.0f);
   float w_sum = 0.0f;
   for (int v = -K; v <= K; ++v) {
     for (int u = -K; u <= K; ++u) {
@@ -92,13 +94,19 @@ void __global__ joint_nlmeans_kernel(const float3* beauty, const float3* albedo,
       const float w_n = min(normal_weight(n0, n1, sigma_n) + EPS, 1.0f);
       const float w = w_b * w_p * w_a * w_n;
 
-      b_sum += w * reinhard(b1);
+      if (is_ok_to_demodulate_albedo(b1, a1)) {
+        sum_demodulated += w * reinhard(b1) / a1;
+      } else {
+        sum += w * reinhard(b1);
+      }
+
       w_sum += w;
     }
   }
   w_sum += EPS;
 
-  denoised[image_idx] = reinhard_inverse(b_sum / w_sum);
+  denoised[image_idx] = reinhard_inverse(sum / w_sum) +
+                        reinhard_inverse(m0 * sum_demodulated / w_sum);
 }
 
 void __host__ nlmeans_kernel_launch(const float3* beauty, const float3* albedo,

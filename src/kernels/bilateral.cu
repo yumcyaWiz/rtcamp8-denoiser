@@ -57,7 +57,7 @@ void __global__ joint_bilateral_kernel(const float3* beauty,
   const float3 b0 = beauty[image_idx];
   const float3 a0 = albedo[image_idx];
   const float3 n0 = 2.0f * normal[image_idx] - 1.0f;
-  const float3 m0 = compute_albedo2(a0);
+  const float3 m0 = compute_albedo(a0);
 
   float3 sum = make_float3(0.0f);
   float3 sum_demodulated = make_float3(0.0f);
