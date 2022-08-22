@@ -8,6 +8,7 @@
 #include "cwl/buffer.h"
 #include "cwl/util.h"
 #include "nl-means.h"
+#include "nwfr.h"
 #include "stb_image.h"
 #include "stb_image_write.h"
 #include "sutil/vec_math.h"
@@ -131,6 +132,15 @@ int main(int argc, char *argv[])
 
   denoised_d->copy_from_device_to_host(denoised);
   save_hdr_image(denoised_filepath + "_atrous.hdr", width, height, denoised);
+
+  // nwfr
+  nwfr_kernel_launch(beauty_d->get_device_ptr(), albedo_d->get_device_ptr(),
+                     normal_d->get_device_ptr(), width, height,
+                     denoised_d->get_device_ptr());
+  CUDA_SYNC_CHECK();
+
+  denoised_d->copy_from_device_to_host(denoised);
+  save_hdr_image(denoised_filepath + "_nwfr.hdr", width, height, denoised);
 
   return 0;
 }
