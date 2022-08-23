@@ -5,6 +5,40 @@
 #include "shared.cu"
 #include "sutil/vec_math.h"
 
+static __forceinline__ __device__ uint xxhash32(const float2& p)
+{
+  const uint PRIME32_2 = 2246822519U, PRIME32_3 = 3266489917U;
+  const uint PRIME32_4 = 668265263U, PRIME32_5 = 374761393U;
+  uint h32 = p.y + PRIME32_5 + p.x * PRIME32_3;
+  h32 = PRIME32_4 * ((h32 << 17) | (h32 >> (32 - 17)));
+  h32 = PRIME32_2 * (h32 ^ (h32 >> 15));
+  h32 = PRIME32_3 * (h32 ^ (h32 >> 13));
+  return h32 ^ (h32 >> 16);
+}
+
+struct PCGState {
+  unsigned long long state = 0;
+  unsigned long long inc = 1;
+};
+
+// *Really* minimal PCG32 code / (c) 2014 M.E. O'Neill / pcg-random.org
+// Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
+static __forceinline__ __device__ __host__ uint pcg32_random_r(PCGState* rng)
+{
+  unsigned long long oldstate = rng->state;
+  // Advance internal state
+  rng->state = oldstate * 6364136223846793005ULL + (rng->inc | 1);
+  // Calculate output function (XSH RR), uses old state for max ILP
+  uint xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
+  uint rot = oldstate >> 59u;
+  return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
+}
+
+static __forceinline__ __device__ float funiform(PCGState& state)
+{
+  return pcg32_random_r(&state) * (1.0f / (1ULL << 32));
+}
+
 // Bitterli, Benedikt, et al. "Nonlinearly weighted first‐order regression for
 // denoising Monte Carlo renderings." Computer Graphics Forum. Vol. 35. No. 4.
 // 2016.
@@ -19,6 +53,7 @@ void __global__ nwfr_kernel(const float3* beauty, const float3* albedo,
   const int K = 8;
   const int P = 8;
   const float sigma_b = 32.0f;
+  const float lambda = 0.01f;
 
   const int image_idx = i + width * j;
   const float3 b0 = beauty[image_idx];
@@ -29,6 +64,10 @@ void __global__ nwfr_kernel(const float3* beauty, const float3* albedo,
   float s11 = 0.0f;
   float s12[6];
   float s22[6][6];
+
+  PCGState state;
+  state.state = xxhash32(make_float2(i, j));
+  state.inc = 1;
 
   // compute s11, s12, s22
   // Takeda, Hiroyuki, Sina Farsiu, and Peyman Milanfar. "Kernel regression for
@@ -111,6 +150,17 @@ void __global__ nwfr_kernel(const float3* beauty, const float3* albedo,
       s22[5][5] = (n1 - n0).z * (n1 - n0).z * K;
     }
   }
+
+  // ridge regularization
+  s11 += lambda;
+  for (int idx = 0; idx < 6; ++idx) { s22[idx][idx] += lambda; }
+
+  // stochastic regularization
+  // s11 += lambda * (2.0f * funiform(state) - 1.0f);
+  // for (int idx = 0; idx < 6; ++idx) {
+  //   s12[idx] += lambda;
+  //   for (int idx2 = 0; idx2 < 6; ++idx2) { s22[idx][idx2] += lambda; }
+  // }
 
   float s22_inv[6][6];
   float A[6][12];
