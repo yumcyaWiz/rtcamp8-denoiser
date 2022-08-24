@@ -186,7 +186,7 @@ void __global__ nwfr_kernel(const float3* beauty, const float3* albedo,
           dist += length(t0 - t1);
         }
       }
-      dist /= (P * P);
+      dist /= ((2 * P + 1) * (2 * P + 1));
 
       const int idx = get_image_idx(i + u, j + v, width, height);
       const float3 b1 = beauty[idx];
